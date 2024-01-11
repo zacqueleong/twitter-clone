@@ -1,56 +1,48 @@
-import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import { useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { Button, Col, Image, Row } from "react-bootstrap";
+import { useDispatch } from "react-redux";
+import { likePost, removeLikeFromPost, deletePost } from "../features/posts/postsSlice";
+import { AuthContext } from "./AuthProvider";
+import UpdatePostModal from "./UpdatePostModal";
 
-export default function ProfilePostCard({ content, postId }) {
-  const [likes, setLikes] = useState([]);
+export default function ProfilePostCard({ post }) {
+  const [likes, setLikes] = useState(post.likes || []);
+  const { content, id: postId, imageUrl } = post;
+  const dispatch = useDispatch();
+  const { currentUser } = useContext(AuthContext);
+  const userId = currentUser.uid;
+
+  // user has liked the post if their id is in the likes array
+  const isLiked = likes.includes(userId);
 
   // Decoding to get the userId
   const token = localStorage.getItem("authToken");
   const decode = jwtDecode(token);
-  const userId = decode.id;
 
   const avatarPic = "https://i.pinimg.com/550x/18/b9/ff/18b9ffb2a8a791d50213a9d595c4dd52.jpg";
-  const BASE_URL = "https://56132d06-c991-4474-b54b-e0905e484056-00-32sji4gi2lbdt.teams.replit.dev";
 
-  //Get like count based on post Id
-  useEffect(() => {
-    fetch(`${BASE_URL}/likes/post/${postId}`)
-      .then((response) => response.json())
-      .then((data) => setLikes(data))
-      .catch((error) => console.error("Error:", error));
-  }, [postId]);
-
-  // Determined isLiked boolean by going through and check if there is any like from the same userId
-  const isLiked = likes.some((like) => like.user_id === userId);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const handleShowUpdateModal = () => setShowUpdateModal(true);
+  const handleCloseUpdateModal = () => setShowUpdateModal(false);
 
   // This will be executed when heart/like button is clicked by the user, either add likes / remove likes
   const handleLike = () => (isLiked ? removeFromLikes() : addToLikes());
 
+  // Add userId to likes array
   const addToLikes = () => {
-    axios
-      .post(`${BASE_URL}/likes`, {
-        user_id: userId,
-        post_id: postId,
-      })
-      .then((response) => {
-        setLikes([...likes, { ...response.data, likes_id: response.data.id }]);
-      })
-      .catch((error) => console.error("Error:", error));
+    setLikes([...likes, userId]);
+    dispatch(likePost({ userId, postId }));
   };
 
+  // Remove userId from likes array and update the backend
   const removeFromLikes = () => {
-    const like = likes.find((like) => like.user_id === userId);
-    if (like) {
-      axios
-        .put(`${BASE_URL}/likes/${userId}/${posdid}`) // Include userId and postId in the URL
-        .then(() => {
-          // Update the state to reflect the removal of the like
-          setLikes(likes.filter((likeItem) => likeItem.user_id !== userId));
-        })
-        .catch((error) => console.error("Error:", error));
-    }
+    setLikes(likes.filter((id) => id !== userId))
+    dispatch(removeLikeFromPost({ userId, postId }))
+  };
+
+  const handleDelete = () => {
+    dispatch(deletePost({ userId, postId }))
   };
 
   return (
@@ -68,6 +60,7 @@ export default function ProfilePostCard({ content, postId }) {
         <strong>Zac</strong>
         <span> @zac.codes - May 4</span>
         <p>{content}</p>
+        <Image src={imageUrl} style={{ width: 150 }} />
         <div className="d-flex justify-content-between">
           <Button variant="light">
             <i className="bi bi-chat"></i>
@@ -85,6 +78,18 @@ export default function ProfilePostCard({ content, postId }) {
           <Button variant="light">
             <i className="bi bi-upload"></i>
           </Button>
+          <Button variant="light">
+            <i className="bi bi-pencil-square" onClick={handleShowUpdateModal}></i>
+          </Button>
+          <Button variant="light">
+            <i className="bi bi-trash" onClick={handleDelete}></i>
+          </Button>
+          <UpdatePostModal
+            show = {showUpdateModal}
+            handleClose = {handleCloseUpdateModal}
+            postId = {postId}
+            originalPostContent = {content}
+          />
         </div>
       </Col>
     </Row>
