@@ -1,4 +1,4 @@
-import { jwtDecode } from "jwt-decode";
+// import { jwtDecode } from "jwt-decode";
 import { useContext, useState } from "react";
 import { Button, Col, Image, Row } from "react-bootstrap";
 import { useDispatch } from "react-redux";
@@ -17,8 +17,8 @@ export default function ProfilePostCard({ post }) {
   const isLiked = likes.includes(userId);
 
   // Decoding to get the userId
-  const token = localStorage.getItem("authToken");
-  const decode = jwtDecode(token);
+  // const token = localStorage.getItem("authToken");
+  // const decode = jwtDecode(token);
 
   const avatarPic = "https://i.pinimg.com/550x/18/b9/ff/18b9ffb2a8a791d50213a9d595c4dd52.jpg";
 
